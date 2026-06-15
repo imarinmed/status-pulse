@@ -24,6 +24,7 @@ Status Pulse is a lightweight project-control dashboard for InnoIT client engage
 
 ## Latest Activity
 
+- **2026-06-15** — Shipped imarin spotlight redesign (SP-05): new `ImarinHero`, paired `RepoFocusCard` for the two CMC Metrics repos, and `RecentCommitsTable` with imarin rows highlighted via amber gradient + avatar + spotlight tag. Defaulted globals to dark theme with ambient amber/violet radial-gradient background. Verified live at https://status-pulse-f74h.onrender.com (HTTP 200, contains "Spotlight contributor", "Focus repositories", "imarin rows highlighted").
 - **2026-06-15** — Created Render web service `status-pulse` and deployed from `main`.
 - **2026-06-15** — Verified live URL returns HTTP 200 and renders dashboard data.
 - **2026-06-15** — Updated README with deployment and environment details.
@@ -34,6 +35,7 @@ Status Pulse is a lightweight project-control dashboard for InnoIT client engage
 2. Add client/tenant selector and per-project views.
 3. Implement auto-sync from GitHub Actions / coverage reports.
 4. Secure Supabase RLS policies for multi-tenant data access.
+5. Add a per-author drill-down view that reuses the imarin spotlight pattern for any contributor.
 
 ## Blockers
 
