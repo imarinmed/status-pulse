@@ -7,53 +7,51 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       activities: {
         Row: {
-          created_at: string | null
+          client_id: string
+          created_at: string
           description: string | null
           id: string
-          metadata: Json | null
           occurred_at: string
-          project_id: string
           repo_id: string | null
+          tenant_id: string
           title: string
           type: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          client_id: string
+          created_at?: string
           description?: string | null
           id?: string
-          metadata?: Json | null
-          occurred_at: string
-          project_id: string
+          occurred_at?: string
           repo_id?: string | null
+          tenant_id: string
           title: string
           type: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          client_id?: string
+          created_at?: string
           description?: string | null
           id?: string
-          metadata?: Json | null
           occurred_at?: string
-          project_id?: string
           repo_id?: string | null
+          tenant_id?: string
           title?: string
           type?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "activities_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "activities_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -63,85 +61,99 @@ export type Database = {
             referencedRelation: "repos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "activities_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       blockers: {
         Row: {
-          closed_at: string | null
-          created_at: string | null
+          client_id: string
+          created_at: string
+          description: string | null
           id: string
           impact: string | null
-          opened_at: string | null
-          project_id: string
+          owner: string | null
+          resolved_at: string | null
+          severity: string
           status: string
+          tenant_id: string
           title: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          closed_at?: string | null
-          created_at?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
           id?: string
           impact?: string | null
-          opened_at?: string | null
-          project_id: string
+          owner?: string | null
+          resolved_at?: string | null
+          severity: string
           status?: string
+          tenant_id: string
           title: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          closed_at?: string | null
-          created_at?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
           id?: string
           impact?: string | null
-          opened_at?: string | null
-          project_id?: string
+          owner?: string | null
+          resolved_at?: string | null
+          severity?: string
           status?: string
+          tenant_id?: string
           title?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "blockers_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "blockers_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blockers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
       }
       clients: {
         Row: {
-          created_at: string | null
-          description: string | null
+          created_at: string
           id: string
           name: string
-          sector: string | null
-          slug: string
           status: string
           tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
-          description?: string | null
+          created_at?: string
           id?: string
           name: string
-          sector?: string | null
-          slug: string
           status?: string
           tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
-          description?: string | null
+          created_at?: string
           id?: string
           name?: string
-          sector?: string | null
-          slug?: string
           status?: string
           tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -156,39 +168,42 @@ export type Database = {
       commits: {
         Row: {
           additions: number
-          author_email: string | null
-          author_name: string | null
+          author_email: string
+          author_name: string
           authored_at: string
-          created_at: string | null
+          created_at: string
           deletions: number
           id: string
           message: string
           repo_id: string
           sha: string
+          updated_at: string
         }
         Insert: {
           additions?: number
-          author_email?: string | null
-          author_name?: string | null
+          author_email: string
+          author_name: string
           authored_at: string
-          created_at?: string | null
+          created_at?: string
           deletions?: number
           id?: string
           message: string
           repo_id: string
           sha: string
+          updated_at?: string
         }
         Update: {
           additions?: number
-          author_email?: string | null
-          author_name?: string | null
+          author_email?: string
+          author_name?: string
           authored_at?: string
-          created_at?: string | null
+          created_at?: string
           deletions?: number
           id?: string
           message?: string
           repo_id?: string
           sha?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -202,37 +217,40 @@ export type Database = {
       }
       coverage_snapshots: {
         Row: {
-          branch: string | null
-          collected_at: string
-          coverage_pct: number | null
-          covered_lines: number | null
-          created_at: string | null
+          created_at: string
+          files: number
+          functions: number
           id: string
+          lines: number
+          percent: number
           repo_id: string
-          sha: string | null
-          total_lines: number | null
+          report_at: string
+          report_type: string
+          updated_at: string
         }
         Insert: {
-          branch?: string | null
-          collected_at: string
-          coverage_pct?: number | null
-          covered_lines?: number | null
-          created_at?: string | null
+          created_at?: string
+          files?: number
+          functions?: number
           id?: string
+          lines?: number
+          percent?: number
           repo_id: string
-          sha?: string | null
-          total_lines?: number | null
+          report_at?: string
+          report_type: string
+          updated_at?: string
         }
         Update: {
-          branch?: string | null
-          collected_at?: string
-          coverage_pct?: number | null
-          covered_lines?: number | null
-          created_at?: string | null
+          created_at?: string
+          files?: number
+          functions?: number
           id?: string
+          lines?: number
+          percent?: number
           repo_id?: string
-          sha?: string | null
-          total_lines?: number | null
+          report_at?: string
+          report_type?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -246,82 +264,109 @@ export type Database = {
       }
       heartbeats: {
         Row: {
-          content: string
-          created_at: string | null
+          client_id: string
+          created_at: string
           id: string
-          project_id: string
-          source_path: string | null
-          updated_at: string | null
+          meta: Json | null
+          occurred_at: string
+          repo_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
         }
         Insert: {
-          content: string
-          created_at?: string | null
+          client_id: string
+          created_at?: string
           id?: string
-          project_id: string
-          source_path?: string | null
-          updated_at?: string | null
+          meta?: Json | null
+          occurred_at?: string
+          repo_id?: string | null
+          status: string
+          tenant_id: string
+          updated_at?: string
         }
         Update: {
-          content?: string
-          created_at?: string | null
+          client_id?: string
+          created_at?: string
           id?: string
-          project_id?: string
-          source_path?: string | null
-          updated_at?: string | null
+          meta?: Json | null
+          occurred_at?: string
+          repo_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "heartbeats_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "heartbeats_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heartbeats_repo_id_fkey"
+            columns: ["repo_id"]
+            isOneToOne: false
+            referencedRelation: "repos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heartbeats_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
       }
       milestones: {
         Row: {
-          completed_at: string | null
-          created_at: string | null
+          client_id: string
+          created_at: string
           description: string | null
+          due_date: string
           id: string
-          project_id: string
-          start_date: string | null
           status: string
-          target_date: string | null
+          tenant_id: string
           title: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          completed_at?: string | null
-          created_at?: string | null
+          client_id: string
+          created_at?: string
           description?: string | null
+          due_date: string
           id?: string
-          project_id: string
-          start_date?: string | null
           status?: string
-          target_date?: string | null
+          tenant_id: string
           title: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          completed_at?: string | null
-          created_at?: string | null
+          client_id?: string
+          created_at?: string
           description?: string | null
+          due_date?: string
           id?: string
-          project_id?: string
-          start_date?: string | null
           status?: string
-          target_date?: string | null
+          tenant_id?: string
           title?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "milestones_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "milestones_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestones_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -329,39 +374,36 @@ export type Database = {
       projects: {
         Row: {
           client_id: string
-          created_at: string | null
+          created_at: string
           description: string | null
           id: string
           name: string
-          repo_url: string | null
-          slug: string
-          source_path: string | null
+          repo_ids: string[] | null
           status: string
-          updated_at: string | null
+          tenant_id: string
+          updated_at: string
         }
         Insert: {
           client_id: string
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
           name: string
-          repo_url?: string | null
-          slug: string
-          source_path?: string | null
+          repo_ids?: string[] | null
           status?: string
-          updated_at?: string | null
+          tenant_id: string
+          updated_at?: string
         }
         Update: {
           client_id?: string
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
           name?: string
-          repo_url?: string | null
-          slug?: string
-          source_path?: string | null
+          repo_ids?: string[] | null
           status?: string
-          updated_at?: string | null
+          tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -371,131 +413,168 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "_projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       repos: {
         Row: {
-          created_at: string | null
-          default_branch: string | null
-          github_owner: string | null
-          github_repo: string | null
+          client_id: string
+          clone_url: string | null
+          created_at: string
+          default_branch: string
+          external_id: string | null
           id: string
-          last_synced_at: string | null
           name: string
-          project_id: string
-          repo_path: string | null
+          provider: string
           slug: string
-          updated_at: string | null
+          tenant_id: string
+          updated_at: string
+          url: string | null
         }
         Insert: {
-          created_at?: string | null
-          default_branch?: string | null
-          github_owner?: string | null
-          github_repo?: string | null
+          client_id: string
+          clone_url?: string | null
+          created_at?: string
+          default_branch?: string
+          external_id?: string | null
           id?: string
-          last_synced_at?: string | null
           name: string
-          project_id: string
-          repo_path?: string | null
+          provider?: string
           slug: string
-          updated_at?: string | null
+          tenant_id: string
+          updated_at?: string
+          url?: string | null
         }
         Update: {
-          created_at?: string | null
-          default_branch?: string | null
-          github_owner?: string | null
-          github_repo?: string | null
+          client_id?: string
+          clone_url?: string | null
+          created_at?: string
+          default_branch?: string
+          external_id?: string | null
           id?: string
-          last_synced_at?: string | null
           name?: string
-          project_id?: string
-          repo_path?: string | null
+          provider?: string
           slug?: string
-          updated_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+          url?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "repos_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "repos_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
       }
       tenants: {
         Row: {
-          brand_primary: string | null
-          brand_secondary: string | null
-          created_at: string | null
+          created_at: string
           id: string
           name: string
           slug: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          brand_primary?: string | null
-          brand_secondary?: string | null
-          created_at?: string | null
+          created_at?: string
           id?: string
           name: string
           slug: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          brand_primary?: string | null
-          brand_secondary?: string | null
-          created_at?: string | null
+          created_at?: string
           id?: string
           name?: string
           slug?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
       test_runs: {
         Row: {
           branch: string | null
-          conclusion: string | null
-          created_at: string | null
+          client_id: string
+          created_at: string
           duration_ms: number | null
+          failed: number | null
           id: string
+          passed: number | null
           repo_id: string
-          run_number: number | null
-          sha: string | null
-          started_at: string | null
-          status: string | null
+          run_at: string
+          skipped: number | null
+          status: string
+          tenant_id: string
+          total: number | null
+          updated_at: string
         }
         Insert: {
           branch?: string | null
-          conclusion?: string | null
-          created_at?: string | null
+          client_id: string
+          created_at?: string
           duration_ms?: number | null
+          failed?: number | null
           id?: string
+          passed?: number | null
           repo_id: string
-          run_number?: number | null
-          sha?: string | null
-          started_at?: string | null
-          status?: string | null
+          run_at?: string
+          skipped?: number | null
+          status: string
+          total?: number | null
+          tenant_id: string
+          updated_at?: string
         }
         Update: {
           branch?: string | null
-          conclusion?: string | null
-          created_at?: string | null
+          client_id?: string
+          created_at?: string
           duration_ms?: number | null
+          failed?: number | null
           id?: string
+          passed?: number | null
           repo_id?: string
-          run_number?: number | null
-          sha?: string | null
-          started_at?: string | null
-          status?: string | null
+          run_at?: string
+          skipped?: number | null
+          status?: string
+          total?: number | null
+          tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "test_runs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "test_runs_repo_id_fkey"
             columns: ["repo_id"]
             isOneToOne: false
             referencedRelation: "repos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -516,33 +595,27 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -550,24 +623,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -575,24 +644,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -600,41 +665,29 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const

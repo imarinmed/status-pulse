@@ -306,25 +306,17 @@ function sumLoc(commits: TimelineCommit[]): number {
 export function buildProjectTimeline(
   commits: ReadonlyArray<TimelineCommit>
 ): ProjectTimelineModel {
-  // Compute the global timeline window.
-  const candidates: number[] = [];
-  for (const c of commits) candidates.push(new Date(c.authoredAt).getTime());
-  for (const m of MILESTONES) {
-    candidates.push(new Date(m.start).getTime());
-    candidates.push(new Date(m.end).getTime());
-  }
-  for (const g of IDLE_GAPS) {
-    candidates.push(new Date(g.start).getTime());
-    candidates.push(new Date(g.end).getTime());
-  }
-
+  // Compute the timeline window from actual commits only so the x-axis
+  // reflects real activity rather than stretching to accommodate planned
+  // milestones or idle annotations.
+  const commitTimestamps = commits.map((c) => new Date(c.authoredAt).getTime());
   const nowMs = Date.now();
-  const minMs = candidates.length > 0 ? Math.min(...candidates) : nowMs;
-  const maxMs = candidates.length > 0 ? Math.max(...candidates) : nowMs;
+  const minMs = commitTimestamps.length > 0 ? Math.min(...commitTimestamps) : nowMs;
+  const maxMs = commitTimestamps.length > 0 ? Math.max(...commitTimestamps) : nowMs;
 
-  // Pad one day on each side so segments at the edges read clearly.
-  const startIso = new Date(minMs - dayMs()).toISOString();
-  const endIso = new Date(maxMs + dayMs()).toISOString();
+  // Pad half a day on each side so single-commit runs remain visible.
+  const startIso = addDays(new Date(minMs).toISOString(), -0.5);
+  const endIso = addDays(new Date(maxMs).toISOString(), 0.5);
 
   const rows: ProjectTimelineRow[] = PROJECT_GROUPS.map((project) => {
     const projectCommits = commits
@@ -492,36 +484,48 @@ export function shortDayLabel(iso: string, withYear = false): string {
   });
 }
 
-/** Returns evenly spaced UTC week-start ticks across the timeline window. */
+/** Number of calendar days between two timestamps, inclusive. */
+export function inclusiveDayCount(startIso: string, endIso: string): number {
+  const start = startOfUtcDay(startIso).getTime();
+  const end = startOfUtcDay(endIso).getTime();
+  return Math.max(1, Math.round((end - start) / dayMs()) + 1);
+}
+
+/** Number of ISO weeks between two timestamps, inclusive. */
+export function inclusiveIsoWeekCount(startIso: string, endIso: string): number {
+  const start = isoWeekStart(startIso).getTime();
+  const end = isoWeekStart(endIso).getTime();
+  return Math.max(1, Math.floor((end - start) / (7 * dayMs())) + 1);
+}
+
+/** Returns evenly spaced, ISO-week-aligned ticks across the timeline window. */
 export function buildTimelineTicks(
   startIso: string,
   endIso: string,
   maxTicks = 8
 ): { iso: string; label: string }[] {
-  const startTs = startOfUtcDay(startIso).getTime();
-  const endTs = startOfUtcDay(endIso).getTime();
-  const span = endTs - startTs;
-  if (span <= 0) return [];
+  const startDay = startOfUtcDay(startIso).getTime();
+  const endDay = startOfUtcDay(endIso).getTime();
+  if (endDay <= startDay) return [];
 
-  const days = Math.max(1, Math.round(span / dayMs()));
-  // Aim for ~maxTicks ticks; round step up to the nearest 3-day multiple
-  // so the labels read cleanly.
-  const rawStep = Math.max(1, Math.ceil(days / maxTicks));
-  const step = Math.ceil(rawStep / 3) * 3;
+  const startMonday = isoWeekStart(startIso).getTime();
+  const totalDays = Math.max(1, Math.round((endDay - startMonday) / dayMs()));
+  const stepWeeks = Math.max(1, Math.ceil(totalDays / 7 / maxTicks));
 
   const ticks: { iso: string; label: string }[] = [];
-  for (let cursor = startTs; cursor <= endTs; cursor += step * dayMs()) {
-    const iso = new Date(cursor).toISOString();
-    ticks.push({ iso, label: shortDayLabel(iso) });
-  }
-  // Always include the last tick so the right edge is labeled.
-  const lastIso = new Date(endTs).toISOString();
-  const lastLabel = shortDayLabel(lastIso);
-  if (
-    ticks.length === 0 ||
-    ticks[ticks.length - 1].label !== lastLabel
+  for (
+    let cursor = startMonday;
+    cursor <= endDay;
+    cursor += stepWeeks * 7 * dayMs()
   ) {
-    ticks.push({ iso: lastIso, label: lastLabel });
+    const d = new Date(cursor);
+    ticks.push({ iso: d.toISOString(), label: shortWeekLabel(d) });
+  }
+
+  // Always label the window end so the right edge is anchored.
+  const lastIso = new Date(endDay).toISOString();
+  if (ticks.length === 0 || ticks[ticks.length - 1].iso !== lastIso) {
+    ticks.push({ iso: lastIso, label: shortDayLabel(lastIso) });
   }
   return ticks;
 }

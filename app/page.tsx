@@ -4,6 +4,8 @@ import {
   IMARIN_PROFILE,
   buildProjectTimeline,
   dayKey,
+  inclusiveDayCount,
+  inclusiveIsoWeekCount,
   isoWeekKey,
   type TimelineCommit,
 } from "@/lib/imarin";
@@ -35,29 +37,65 @@ function pickRepo(repos: RepoJoin): { name: string; slug: string } {
 export default async function Home() {
   const supabase = await createClient();
 
-  const [
-    { data: repos },
-    { data: rawImarinCommits },
-    { data: coverageRows },
-  ] = await Promise.all([
-    supabase.from("repos").select("id, name, slug"),
-    supabase
-      .from("commits")
-      .select(
-        "sha, message, author_name, author_email, authored_at, additions, deletions, repos(name, slug)"
-      )
-      .eq("author_email", IMARIN_PROFILE.email)
-      .order("authored_at", { ascending: false }),
-    supabase
-      .from("coverage_snapshots")
-      .select(
-        "coverage_pct, branch, collected_at, repo_id, repos(name, slug)"
-      )
-      .order("collected_at", { ascending: false }),
-  ]);
+  const [{ data: repos }, { data: rawImarinCommits }, { data: coverageRows }] =
+    await Promise.all([
+      supabase.from("repos").select("id, name, slug"),
+      supabase
+        .from("commits")
+        .select(
+          "sha, message, author_name, author_email, authored_at, additions, deletions, repos(name, slug)"
+        )
+        .eq("author_email", IMARIN_PROFILE.email)
+        .order("authored_at", { ascending: false }),
+      supabase
+        .from("coverage_snapshots")
+        .select("percent, report_at, repo_id, repos(name, slug)")
+        .order("report_at", { ascending: false }),
+    ]);
 
   const repoList = repos ?? [];
   const imarinCommits = rawImarinCommits ?? [];
+
+  // --- Contributor activity window ---
+  // rawImarinCommits is sorted newest first, so the last element is the
+  // earliest commit and the first element is the latest.
+  const contributorWindowStart =
+    imarinCommits[imarinCommits.length - 1]?.authored_at ?? null;
+  const contributorWindowEnd = imarinCommits[0]?.authored_at ?? null;
+
+  const contributorTotalDays =
+    contributorWindowStart && contributorWindowEnd
+      ? inclusiveDayCount(contributorWindowStart, contributorWindowEnd)
+      : 0;
+  const contributorTotalWeeks =
+    contributorWindowStart && contributorWindowEnd
+      ? inclusiveIsoWeekCount(contributorWindowStart, contributorWindowEnd)
+      : 0;
+
+  // --- Team commits for the same repos / window ---
+  const repoIds = repoList.map((r) => r.id);
+  const { data: allTeamCommits } =
+    repoIds.length > 0
+      ? await supabase
+          .from("commits")
+          .select("authored_at, author_email, repo_id")
+          .in("repo_id", repoIds)
+      : { data: [] };
+
+  const teamCommitsInWindow = (allTeamCommits ?? []).filter((c) => {
+    if (!contributorWindowStart || !contributorWindowEnd) return false;
+    const t = c.authored_at;
+    return t >= contributorWindowStart && t <= contributorWindowEnd;
+  });
+
+  const teamDayBuckets = new Set<string>();
+  const teamWeekBuckets = new Set<string>();
+  for (const c of teamCommitsInWindow) {
+    teamDayBuckets.add(dayKey(c.authored_at));
+    teamWeekBuckets.add(isoWeekKey(c.authored_at));
+  }
+  const teamActiveDays = teamDayBuckets.size;
+  const teamActiveWeeks = teamWeekBuckets.size;
 
   // --- Top-line metrics (LOC / pushes / active days / active weeks) ---
   const totalLoc = imarinCommits.reduce(
@@ -123,7 +161,7 @@ export default async function Home() {
   const coverageByRepoId = new Map<string, number | null>();
   for (const row of coverageRows ?? []) {
     if (!row.repo_id || coverageByRepoId.has(row.repo_id)) continue;
-    coverageByRepoId.set(row.repo_id, row.coverage_pct);
+    coverageByRepoId.set(row.repo_id, row.percent);
   }
 
   // Focus repos in canonical order (API first, UI second).
@@ -194,7 +232,20 @@ export default async function Home() {
         </header>
 
         {/* 1. Identity hero */}
-        <IdentityHero tagline={tagline} />
+        <IdentityHero
+          tagline={tagline}
+          stats={{
+            totalPushes,
+            totalLoc,
+            activeDays,
+            activeDaysTotal: contributorTotalDays,
+            activeWeeks,
+            activeWeeksTotal: contributorTotalWeeks,
+            sharePct,
+            reposTouched: reposImarinTouched,
+            repoTotal: repoList.length,
+          }}
+        />
 
         {/* 2. Impact metric row — LOC / pushes / active days / active weeks */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -211,20 +262,36 @@ export default async function Home() {
           />
           <ImpactMetric
             label="Active days"
-            value={activeDays.toLocaleString()}
-            caption="distinct UTC days with commits"
+            value={`${activeDays} / ${contributorTotalDays}`}
+            caption="distinct UTC days in contributor window"
           />
           <ImpactMetric
             label="Active weeks"
-            value={activeWeeks.toLocaleString()}
-            caption="distinct ISO weeks with commits"
+            value={`${activeWeeks} / ${contributorTotalWeeks}`}
+            caption="distinct ISO weeks in contributor window"
           />
         </section>
 
-        {/* 3. Project timeline (Gantt) */}
+        {/* 3. Team activity during the same window */}
+        {(teamActiveDays > 0 || teamActiveWeeks > 0) && (
+          <section className="grid gap-4 sm:grid-cols-2">
+            <ImpactMetric
+              label="Team active days"
+              value={`${teamActiveDays} / ${contributorTotalDays}`}
+              caption="any contributor, same window"
+            />
+            <ImpactMetric
+              label="Team active weeks"
+              value={`${teamActiveWeeks} / ${contributorTotalWeeks}`}
+              caption="any contributor, same window"
+            />
+          </section>
+        )}
+
+        {/* 4. Project timeline (Gantt) */}
         <ProjectTimeline model={timelineModel} />
 
-        {/* 4. Two repo deep-dive cards */}
+        {/* 5. Two repo deep-dive cards */}
         {focusRepoStats.length > 0 && (
           <section className="grid gap-4 lg:grid-cols-2">
             {focusRepoStats.map((repo) => (
@@ -241,10 +308,10 @@ export default async function Home() {
           </section>
         )}
 
-        {/* 5. Activity timeline (imarin only) */}
+        {/* 6. Activity timeline (imarin only) */}
         <ActivityTimeline commits={timelineCommits} />
 
-        {/* 6. Footer */}
+        {/* 7. Footer */}
         <footer className="pt-2 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
           Status Pulse · @{IMARIN_PROFILE.handle} spotlight ·{" "}
           {timelineCommits.length} recent commits · revalidates every{" "}
