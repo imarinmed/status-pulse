@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Status Pulse",
-  description: "Multi-tenant project status dashboard for InnoIT client verticals",
+  title: "Status Pulse · Contributor Impact Report",
+  description:
+    "A focused contributor impact report rendered from live repository telemetry.",
 };
 
 export default function RootLayout({
