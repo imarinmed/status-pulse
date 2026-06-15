@@ -154,20 +154,25 @@ def main() -> None:
         commits = parse_git_commits(repo_path, meta["id"], BRANCH)
         lines.append(f"-- {slug}: {len(commits)} commits")
         if commits:
-            lines.append("INSERT INTO commits (repo_id, sha, message, author_name, author_email, authored_at) VALUES")
-            values = []
-            for c in commits:
-                values.append(
-                    "("
-                    f"{escape_sql(c['repo_id'])}, "
-                    f"{escape_sql(c['sha'])}, "
-                    f"{escape_sql(c['message'])}, "
-                    f"{escape_sql(c['author_name'])}, "
-                    f"{escape_sql(c['author_email'])}, "
-                    f"{escape_sql(c['committed_at'])}"
-                    ")"
-                )
-            lines.append(",".join(values) + ";")
+            chunk_size = 10
+            for i in range(0, len(commits), chunk_size):
+                chunk = commits[i:i + chunk_size]
+                lines.append("INSERT INTO commits (repo_id, sha, message, author_name, author_email, authored_at, additions, deletions) VALUES")
+                values = []
+                for c in chunk:
+                    values.append(
+                        "("
+                        f"{escape_sql(c['repo_id'])}, "
+                        f"{escape_sql(c['sha'])}, "
+                        f"{escape_sql(c['message'])}, "
+                        f"{escape_sql(c['author_name'])}, "
+                        f"{escape_sql(c['author_email'])}, "
+                        f"{escape_sql(c['committed_at'])}, "
+                        f"{c['additions']}, "
+                        f"{c['deletions']}"
+                        ")"
+                    )
+                lines.append(",".join(values) + ";")
         lines.append("")
 
         cov = parse_coverage(repo_path, meta.get("coverage_path"))

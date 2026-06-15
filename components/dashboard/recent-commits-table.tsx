@@ -19,6 +19,8 @@ export interface CommitRowData {
   authoredAt: string;
   repoName: string;
   repoSlug: string;
+  additions?: number;
+  deletions?: number;
 }
 
 export interface ActivityTimelineProps {
@@ -46,9 +48,12 @@ function formatDate(iso: string): string {
 }
 
 export function ActivityTimeline({ commits }: ActivityTimelineProps) {
-  const imarinCount = commits.filter((c) =>
+  // The dashboard is an @imarin spotlight — only show commits authored
+  // by Iñaki. Defensive: also filter here so misconfigured upstream data
+  // can never leak other authors into the timeline.
+  const imarinCommits = commits.filter((c) =>
     isImarin(c.authorEmail, c.authorName)
-  ).length;
+  );
 
   return (
     <Card>
@@ -59,7 +64,7 @@ export function ActivityTimeline({ commits }: ActivityTimelineProps) {
               Activity timeline
             </CardTitle>
             <CardDescription>
-              Recent commits across all repositories.
+              Recent commits authored by @{IMARIN_PROFILE.handle}.
             </CardDescription>
           </div>
           <Badge
@@ -67,79 +72,74 @@ export function ActivityTimeline({ commits }: ActivityTimelineProps) {
             className="border-amber-500/40 bg-amber-500/10 font-mono text-[10px] uppercase tracking-[0.16em] text-amber-300"
           >
             <span className="mr-1.5 inline-block size-1.5 rounded-full bg-amber-500" />
-            {imarinCount} by @{IMARIN_PROFILE.handle}
+            {imarinCommits.length} commits
           </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="px-0 pb-0">
         <Separator />
-        <ul className="divide-y divide-border">
-          {commits.map((commit) => {
-            const mine = isImarin(commit.authorEmail, commit.authorName);
-            return (
-              <li
-                key={commit.sha}
-                className={cn(
-                  "relative flex items-start gap-4 px-6 py-4 transition-colors",
-                  mine && "bg-amber-500/[0.04]"
-                )}
-              >
-                {mine && (
+        {imarinCommits.length === 0 ? (
+          <div className="flex h-32 items-center justify-center px-6 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            No recent commits by @{IMARIN_PROFILE.handle}.
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {imarinCommits.map((commit) => {
+              const loc =
+                (commit.additions ?? 0) + (commit.deletions ?? 0);
+              return (
+                <li
+                  key={commit.sha}
+                  className="relative flex items-start gap-4 bg-amber-500/[0.04] px-6 py-4 transition-colors"
+                >
                   <span
                     aria-hidden
                     className="absolute inset-y-0 left-0 w-0.5 bg-amber-500"
                   />
-                )}
 
-                <Avatar size="sm" className="size-8 shrink-0">
-                  <AvatarFallback
-                    className={cn(
-                      "text-[10px] font-semibold",
-                      mine && "bg-amber-500 text-amber-950"
-                    )}
-                  >
-                    {mine
-                      ? IMARIN_PROFILE.initials
-                      : initialsFor(commit.authorName)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p
-                    className={cn(
-                      "line-clamp-2 text-sm leading-snug",
-                      mine
-                        ? "font-medium text-foreground"
-                        : "text-foreground/90"
-                    )}
-                  >
-                    {commitTitle(commit.message)}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
-                    <span className="text-foreground/70">
-                      {commit.repoName}
-                    </span>
-                    <span aria-hidden>·</span>
-                    <span
-                      className={
-                        mine ? "text-amber-300" : "text-muted-foreground"
-                      }
+                  <Avatar size="sm" className="size-8 shrink-0">
+                    <AvatarFallback
+                      className={cn(
+                        "bg-amber-500 text-[10px] font-semibold text-amber-950"
+                      )}
                     >
-                      {shortSha(commit.sha)}
-                    </span>
-                    <span aria-hidden>·</span>
-                    <span>{commit.authorName}</span>
-                  </div>
-                </div>
+                      {IMARIN_PROFILE.initials ||
+                        initialsFor(commit.authorName)}
+                    </AvatarFallback>
+                  </Avatar>
 
-                <div className="shrink-0 text-right font-mono text-[11px] text-muted-foreground">
-                  {formatDate(commit.authoredAt)}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
+                      {commitTitle(commit.message)}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
+                      <span className="text-foreground/70">
+                        {commit.repoName}
+                      </span>
+                      <span aria-hidden>·</span>
+                      <span className="text-amber-300">
+                        {shortSha(commit.sha)}
+                      </span>
+                      {loc > 0 && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span className="tabular-nums">
+                            {loc.toLocaleString()} LOC
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right font-mono text-[11px] text-muted-foreground">
+                    {formatDate(commit.authoredAt)}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </CardContent>
     </Card>
   );
