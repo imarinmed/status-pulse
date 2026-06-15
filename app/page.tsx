@@ -2,10 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   FOCUS_REPO_SLUGS,
   IMARIN_PROFILE,
+  buildProjectTimeline,
   dayKey,
   isoWeekKey,
-  isoWeekStart,
-  shortWeekLabel,
+  type TimelineCommit,
 } from "@/lib/imarin";
 import { IdentityHero } from "@/components/dashboard/identity-hero";
 import { ImpactMetric } from "@/components/dashboard/impact-metric";
@@ -14,10 +14,7 @@ import {
   ActivityTimeline,
   type CommitRowData,
 } from "@/components/dashboard/recent-commits-table";
-import {
-  WeeklyActivityChart,
-  type WeeklyActivityPoint,
-} from "@/components/dashboard/weekly-activity-chart";
+import { ProjectTimeline } from "@/components/dashboard/project-timeline";
 
 export const revalidate = 60;
 
@@ -33,59 +30,6 @@ function pickRepo(repos: RepoJoin): { name: string; slug: string } {
     name: first?.name ?? "—",
     slug: first?.slug ?? "—",
   };
-}
-
-/**
- * Build a continuous weekly series so the chart never shows gappy
- * timelines. Fills empty weeks with zero between the earliest and
- * latest imarin commit (or the current week, whichever is later).
- */
-function buildWeeklySeries(
-  commits: ReadonlyArray<{
-    authored_at: string;
-    additions: number;
-    deletions: number;
-  }>
-): WeeklyActivityPoint[] {
-  if (commits.length === 0) return [];
-
-  type Bucket = { week: string; start: Date; commits: number; loc: number };
-  const buckets = new Map<string, Bucket>();
-
-  let minStart = isoWeekStart(commits[0].authored_at);
-  let maxStart = minStart;
-
-  for (const c of commits) {
-    const week = isoWeekKey(c.authored_at);
-    const start = isoWeekStart(c.authored_at);
-    if (start < minStart) minStart = start;
-    if (start > maxStart) maxStart = start;
-    const existing = buckets.get(week);
-    const loc = (c.additions ?? 0) + (c.deletions ?? 0);
-    if (existing) {
-      existing.commits += 1;
-      existing.loc += loc;
-    } else {
-      buckets.set(week, { week, start, commits: 1, loc });
-    }
-  }
-
-  // Walk continuous weeks from min..max and emit zero-filled points.
-  const points: WeeklyActivityPoint[] = [];
-  const cursor = new Date(minStart);
-  while (cursor <= maxStart) {
-    const week = isoWeekKey(cursor.toISOString());
-    const bucket = buckets.get(week);
-    points.push({
-      week,
-      label: shortWeekLabel(cursor),
-      commits: bucket?.commits ?? 0,
-      loc: bucket?.loc ?? 0,
-    });
-    cursor.setUTCDate(cursor.getUTCDate() + 7);
-  }
-
-  return points;
 }
 
 export default async function Home() {
@@ -196,12 +140,24 @@ export default async function Home() {
   const sharePct =
     totalTrackedCommits > 0 ? (totalPushes / totalTrackedCommits) * 100 : 0;
 
-  // Weekly chart series (chronological).
-  const weeklySeries = buildWeeklySeries(
-    [...imarinCommits].sort((a, b) =>
-      a.authored_at < b.authored_at ? -1 : 1
-    )
-  );
+  // Project timeline (Gantt) — group imarin commits by their repo slug and
+  // feed PROJECT_GROUPS / MILESTONES / IDLE_GAPS through buildProjectTimeline.
+  const timelineInput: TimelineCommit[] = imarinCommits
+    .map((c) => {
+      const repo = pickRepo(c.repos as RepoJoin);
+      if (repo.slug === "—") return null;
+      return {
+        sha: c.sha,
+        message: c.message,
+        authoredAt: c.authored_at,
+        additions: c.additions ?? 0,
+        deletions: c.deletions ?? 0,
+        repoSlug: repo.slug,
+      } satisfies TimelineCommit;
+    })
+    .filter((c): c is TimelineCommit => c !== null);
+
+  const timelineModel = buildProjectTimeline(timelineInput);
 
   // Activity timeline = most recent imarin commits only.
   const timelineCommits: CommitRowData[] = imarinCommits
@@ -265,8 +221,8 @@ export default async function Home() {
           />
         </section>
 
-        {/* 3. Weekly activity chart */}
-        <WeeklyActivityChart data={weeklySeries} />
+        {/* 3. Project timeline (Gantt) */}
+        <ProjectTimeline model={timelineModel} />
 
         {/* 4. Two repo deep-dive cards */}
         {focusRepoStats.length > 0 && (

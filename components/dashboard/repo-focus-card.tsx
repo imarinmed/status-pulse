@@ -51,7 +51,7 @@ export function RepoFocusCard({
         >
           Repository
         </Badge>
-        <CardTitle className="font-mono text-base font-medium tracking-tight">
+        <CardTitle className="text-base font-medium tracking-tight">
           {name}
         </CardTitle>
         <p className="font-mono text-xs text-muted-foreground">{slug}</p>
@@ -96,7 +96,7 @@ export function RepoFocusCard({
               <p className="line-clamp-2 text-sm font-medium text-foreground">
                 {commitTitle(latestImarinCommit.message)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-mono text-xs text-muted-foreground">
                 {formatDate(latestImarinCommit.authoredAt)}
               </p>
             </div>
@@ -124,8 +124,8 @@ function RepoStat({
       <p
         className={
           accent
-            ? "text-2xl font-semibold tabular-nums text-amber-200"
-            : "text-2xl font-semibold tabular-nums text-foreground"
+            ? "font-mono text-2xl font-semibold tabular-nums text-amber-200"
+            : "font-mono text-2xl font-semibold tabular-nums text-foreground"
         }
       >
         {value}

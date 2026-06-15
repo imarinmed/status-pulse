@@ -40,7 +40,7 @@ export function ImpactMetric({
       <CardContent className="space-y-1">
         <CardTitle
           className={cn(
-            "text-4xl font-semibold tabular-nums tracking-tight",
+            "font-mono text-4xl font-semibold tabular-nums tracking-tight",
             accent ? "text-amber-200" : "text-foreground"
           )}
         >
