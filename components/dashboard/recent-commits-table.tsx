@@ -5,17 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { IMARIN_PROFILE, commitTitle, isImarin, shortSha } from "@/lib/imarin";
+import { cn } from "@/lib/utils";
 
 export interface CommitRowData {
   sha: string;
@@ -27,17 +21,19 @@ export interface CommitRowData {
   repoSlug: string;
 }
 
-export interface RecentCommitsTableProps {
+export interface ActivityTimelineProps {
   commits: CommitRowData[];
 }
 
 function initialsFor(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "??"
+  );
 }
 
 function formatDate(iso: string): string {
@@ -49,116 +45,101 @@ function formatDate(iso: string): string {
   });
 }
 
-export function RecentCommitsTable({ commits }: RecentCommitsTableProps) {
-  const imarinCount = commits.filter((c) => isImarin(c.authorEmail, c.authorName))
-    .length;
+export function ActivityTimeline({ commits }: ActivityTimelineProps) {
+  const imarinCount = commits.filter((c) =>
+    isImarin(c.authorEmail, c.authorName)
+  ).length;
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4">
-        <div>
-          <CardTitle>Recent commits</CardTitle>
-          <CardDescription>
-            Latest {commits.length} commits across tracked repositories.{" "}
-            <span className="text-amber-200">
-              {imarinCount} by {IMARIN_PROFILE.displayName}
-            </span>
-            .
-          </CardDescription>
+      <CardHeader className="gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-base font-medium tracking-tight">
+              Activity timeline
+            </CardTitle>
+            <CardDescription>
+              Recent commits across all repositories.
+            </CardDescription>
+          </div>
+          <Badge
+            variant="outline"
+            className="border-amber-500/40 bg-amber-500/10 font-mono text-[10px] uppercase tracking-[0.16em] text-amber-300"
+          >
+            <span className="mr-1.5 inline-block size-1.5 rounded-full bg-amber-500" />
+            {imarinCount} by @{IMARIN_PROFILE.handle}
+          </Badge>
         </div>
-        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-200">
-          <span className="mr-1.5 inline-block size-2 rounded-full bg-gradient-to-br from-amber-400 to-orange-500" />
-          imarin rows highlighted
-        </Badge>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[160px]">Repository</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead className="w-[200px]">Author</TableHead>
-                <TableHead className="w-[150px] text-right">When</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {commits.map((commit) => {
-                const mine = isImarin(commit.authorEmail, commit.authorName);
-                return (
-                  <TableRow
-                    key={commit.sha}
-                    className={
-                      mine
-                        ? "relative bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent hover:from-amber-500/20"
-                        : ""
-                    }
+
+      <CardContent className="px-0 pb-0">
+        <Separator />
+        <ul className="divide-y divide-border">
+          {commits.map((commit) => {
+            const mine = isImarin(commit.authorEmail, commit.authorName);
+            return (
+              <li
+                key={commit.sha}
+                className={cn(
+                  "relative flex items-start gap-4 px-6 py-4 transition-colors",
+                  mine && "bg-amber-500/[0.04]"
+                )}
+              >
+                {mine && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 w-0.5 bg-amber-500"
+                  />
+                )}
+
+                <Avatar size="sm" className="size-8 shrink-0">
+                  <AvatarFallback
+                    className={cn(
+                      "text-[10px] font-semibold",
+                      mine && "bg-amber-500 text-amber-950"
+                    )}
                   >
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{commit.repoName}</span>
-                        <span className="font-mono text-[10px] text-muted-foreground">
-                          {shortSha(commit.sha)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-start gap-2">
-                        {mine && (
-                          <span
-                            aria-hidden
-                            className="mt-1.5 inline-block h-3 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-400 to-orange-500"
-                          />
-                        )}
-                        <span
-                          className={`line-clamp-2 max-w-xl text-sm ${
-                            mine ? "font-medium text-amber-50" : ""
-                          }`}
-                        >
-                          {commitTitle(commit.message)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar size="sm" className="size-7">
-                          <AvatarFallback
-                            className={
-                              mine
-                                ? "bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-amber-950"
-                                : "text-[10px]"
-                            }
-                          >
-                            {mine
-                              ? IMARIN_PROFILE.initials
-                              : initialsFor(commit.authorName) || "??"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span
-                            className={`text-sm ${
-                              mine ? "font-semibold text-amber-100" : ""
-                            }`}
-                          >
-                            {commit.authorName}
-                          </span>
-                          {mine && (
-                            <span className="text-[10px] uppercase tracking-wider text-amber-300/80">
-                              Spotlight
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">
-                      {formatDate(commit.authoredAt)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                    {mine
+                      ? IMARIN_PROFILE.initials
+                      : initialsFor(commit.authorName)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p
+                    className={cn(
+                      "line-clamp-2 text-sm leading-snug",
+                      mine
+                        ? "font-medium text-foreground"
+                        : "text-foreground/90"
+                    )}
+                  >
+                    {commitTitle(commit.message)}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
+                    <span className="text-foreground/70">
+                      {commit.repoName}
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span
+                      className={
+                        mine ? "text-amber-300" : "text-muted-foreground"
+                      }
+                    >
+                      {shortSha(commit.sha)}
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span>{commit.authorName}</span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-right font-mono text-[11px] text-muted-foreground">
+                  {formatDate(commit.authoredAt)}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </CardContent>
     </Card>
   );
